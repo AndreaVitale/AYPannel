@@ -12,8 +12,8 @@
 
 @protocol AYPannelDrawerDelegate;
 
-
-
 @interface AYDrawerContentViewController : UIViewController <AYPannelDrawerDelegate>
+
 @property (nonatomic, weak) id<AYDrawerScrollViewDelegate> drawerScrollDelegate;
+
 @end

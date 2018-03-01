@@ -17,18 +17,20 @@ typedef NS_ENUM(NSUInteger, AYPannelPosition) {
 
 @class AYPannelViewController;
 
-static CGFloat kAYTopInset = 20.0f;
-
 //通知外界drawerPosition发生变化
 @protocol AYPannelDrawerDelegate <NSObject>
+
 @property (nonatomic, strong) UIView *view;
+@property (nonatomic, assign) CGFloat topInsetHeight;
+@property (nonatomic, assign) CGFloat collapsedDrawerHeight;
+@property (nonatomic, assign) CGFloat partialRevealDrawerHeight;
+
+@property (nonatomic, copy) void (^drawerDragListener)(CGFloat);
 
 - (void)drawerPositionDidChange:(AYPannelViewController *)drawer;
 @optional
 - (void)drawerDraggingProgress:(CGFloat)progress;//0 - 1
 
-- (CGFloat)collapsedDrawerHeight;
-- (CGFloat)partialRevealDrawerHeight;
 - (NSSet <NSNumber *> *)supportPannelPosition; // 返回支持位置的AYPannelPosition枚举的NSNumber对象, 如果不实现或者返回空，就默认是所有位置都支持
 
 - (UIVisualEffectView *)drawerBackgroundVisualEffectView; // 如果要展示毛玻璃效果，上层view需要设置为透明; 不需要返回nil即可

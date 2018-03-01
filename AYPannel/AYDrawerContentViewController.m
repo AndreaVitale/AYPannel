@@ -10,12 +10,19 @@
 #import "AYPannelViewController.h"
 
 @interface AYDrawerContentViewController () <UITableViewDataSource, UITableViewDelegate>
+
 @property (nonatomic, strong) UIView *headerView;
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) UIButton *button;
+
 @end
 
 @implementation AYDrawerContentViewController
+
+@synthesize drawerDragListener;
+@synthesize topInsetHeight;
+@synthesize collapsedDrawerHeight;
+@synthesize partialRevealDrawerHeight;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -34,7 +41,7 @@
     [super viewDidLayoutSubviews];
     
     self.headerView.frame = CGRectMake(0, 0, self.view.bounds.size.width, 60);
-    self.tableView.frame = CGRectMake(0, 60, self.view.bounds.size.width, self.view.bounds.size.height - 60 - kAYTopInset);
+    self.tableView.frame = CGRectMake(0, 60, self.view.bounds.size.width, self.view.bounds.size.height - 60 - self.topInsetHeight);
     self.button.frame = CGRectMake(100, 0, 50, 50);
 }
 #pragma mark - UITableViewDataSource
@@ -68,15 +75,9 @@
 }
 
 - (void)drawerDraggingProgress:(CGFloat)progress {
-//    NSLog(@"###### dragging progress is %f", progress);
-}
-
-- (CGFloat)collapsedDrawerHeight {
-    return 68.0f;
-}
-
-- (CGFloat)partialRevealDrawerHeight {
-    return 264.0f;
+    if (self.drawerDragListener != nil) {
+        self.drawerDragListener(progress);
+    }
 }
 
 - (NSSet<NSNumber *> *)supportPannelPosition {
@@ -97,7 +98,9 @@
 
 - (UIView *)backgroundDimmingView {
     UIView *backgroundDimmingView = [[UIView alloc] init];
+    
     backgroundDimmingView.backgroundColor = [UIColor blackColor];
+    
     return backgroundDimmingView;
 }
 
@@ -105,7 +108,6 @@
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     [self.drawerScrollDelegate drawerScrollViewDidScroll:scrollView];
 }
-
 
 #pragma mark - Getter
 
