@@ -49,15 +49,15 @@ static CGFloat kAYDefaultShadowRadius = 3.0f;
     if (self) {
         self.primaryContentViewController = primaryContentViewController;
         self.drawerContentViewController = drawerContentViewController;
+        
+        // Default supported drawer positions
+        self.supportedPositions = [NSSet setWithArray:@[@(AYPannelPositionClosed), @(AYPannelPositionOpen), @(AYPannelPositionCollapsed), @(AYPannelPositionPartiallyRevealed)]];
+        
+        // Setting default values to drawer controller
+        [self.drawerContentViewController setCollapsedDrawerHeight:kAYDefaultCollapsedHeight];
+        [self.drawerContentViewController setPartialRevealDrawerHeight:kAYDefaultPartialRevealHeight];
+        [self.drawerContentViewController setTopInsetHeight:kAYDefaultTopInsetHeight];
     }
-    
-    // Default supported drawer positions
-    self.supportedPositions = [NSSet setWithArray:@[@(AYPannelPositionClosed), @(AYPannelPositionOpen), @(AYPannelPositionCollapsed), @(AYPannelPositionPartiallyRevealed)]];
-    
-    // Setting default values to drawer controller
-    [self.drawerContentViewController setCollapsedDrawerHeight:kAYDefaultCollapsedHeight];
-    [self.drawerContentViewController setPartialRevealDrawerHeight:kAYDefaultPartialRevealHeight];
-    [self.drawerContentViewController setTopInsetHeight:kAYDefaultTopInsetHeight];
     
     return self;
 }
@@ -134,7 +134,7 @@ static CGFloat kAYDefaultShadowRadius = 3.0f;
     
     [self.backgroundDimmingView setHidden:NO];
     
-    [self setDrawerPosition:AYPannelPositionCollapsed animated:NO];
+    [self setDrawerPosition:AYPannelPositionCollapsed animated:YES];
 }
 
 - (void)supportedPositionsDidChanged {
