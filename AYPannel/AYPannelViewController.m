@@ -226,20 +226,30 @@ static CGFloat kAYDefaultShadowRadius = 3.0f;
         stopToMoveTo = lowestStop;
     }
     
-    self.isAnimatingDrawerPosition = YES;
-    self.currentPosition = position;
-    
-    __weak typeof (self) weakSelf = self;
-    [UIView animateWithDuration:0.3 delay:0.0 usingSpringWithDamping:0.75 initialSpringVelocity:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-        [weakSelf.drawerScrollView setContentOffset:CGPointMake(0, stopToMoveTo - lowestStop) animated:NO];
+    if (animated) {
+        self.isAnimatingDrawerPosition = YES;
+        self.currentPosition = position;
         
-        if (weakSelf.backgroundDimmingView) {
-            weakSelf.backgroundDimmingView.frame = [weakSelf p_backgroundDimmingViewFrameForDrawerPosition:stopToMoveTo];
+        __weak typeof (self) weakSelf = self;
+        [UIView animateWithDuration:0.3 delay:0.0 usingSpringWithDamping:0.75 initialSpringVelocity:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+            [weakSelf.drawerScrollView setContentOffset:CGPointMake(0, stopToMoveTo - lowestStop) animated:NO];
+            
+            if (weakSelf.backgroundDimmingView) {
+                weakSelf.backgroundDimmingView.frame = [weakSelf p_backgroundDimmingViewFrameForDrawerPosition:stopToMoveTo];
+            }
+            
+        } completion:^(BOOL finished) {
+            weakSelf.isAnimatingDrawerPosition = NO;
+        }];
+    } else {
+        [self.drawerScrollView setContentOffset:CGPointMake(0, stopToMoveTo - lowestStop) animated:NO];
+        
+        self.currentPosition = position;
+        
+        if (self.backgroundDimmingView) {
+            self.backgroundDimmingView.frame = [self p_backgroundDimmingViewFrameForDrawerPosition:stopToMoveTo];
         }
-        
-    } completion:^(BOOL finished) {
-        weakSelf.isAnimatingDrawerPosition = NO;
-    }];
+    }
 }
 
 #pragma mark - UIScrollViewDelegate
