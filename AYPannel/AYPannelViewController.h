@@ -47,7 +47,10 @@ typedef NS_ENUM(NSUInteger, AYPannelPosition) {
 - (void)drawerScrollViewDidScroll:(UIScrollView *)scrollView;
 @end
 
-@interface AYPannelViewController : UIViewController <AYDrawerScrollViewDelegate>
+@interface AYPannelViewController : UIViewController <AYDrawerScrollViewDelegate> {
+    @private
+    NSMutableArray <NSNumber *> *drawerStops;
+}
 
 @property (nonatomic, assign) AYPannelPosition currentPosition;
 @property (nonatomic, assign) BOOL shouldScrollDrawerScrollView;

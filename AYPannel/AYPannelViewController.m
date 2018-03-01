@@ -52,16 +52,12 @@ static CGFloat kAYDefaultShadowRadius = 3.0f;
     }
     
     // Default supported drawer positions
-    self.supportedPositions = [NSSet setWithArray:@[@(AYPannelPositionOpen), @(AYPannelPositionClosed), @(AYPannelPositionCollapsed), @(AYPannelPositionPartiallyRevealed)]];
+    self.supportedPositions = [NSSet setWithArray:@[@(AYPannelPositionClosed), @(AYPannelPositionOpen), @(AYPannelPositionCollapsed), @(AYPannelPositionPartiallyRevealed)]];
     
     // Setting default values to drawer controller
     [self.drawerContentViewController setCollapsedDrawerHeight:kAYDefaultCollapsedHeight];
     [self.drawerContentViewController setPartialRevealDrawerHeight:kAYDefaultPartialRevealHeight];
     [self.drawerContentViewController setTopInsetHeight:kAYDefaultTopInsetHeight];
-    
-    [self.drawerContentViewController setDrawerDragListener:^(CGFloat position) {
-        NSLog(@"Drag listener %f", position);
-    }];
     
     return self;
 }
@@ -161,7 +157,11 @@ static CGFloat kAYDefaultShadowRadius = 3.0f;
         self.drawerScrollView.contentInset = UIEdgeInsetsMake(0, 0, self.bottomLayoutGuide.length, 0);
     }
     
-    NSMutableArray <NSNumber *> *drawerStops = [[NSMutableArray alloc] init];
+    drawerStops = [[NSMutableArray alloc] init];
+    
+    if ([self.supportedPositions containsObject:@(AYPannelPositionClosed)]) {
+        [drawerStops addObject:@(0)];
+    }
     
     if ([self.supportedPositions containsObject:@(AYPannelPositionCollapsed)]) {
         [drawerStops addObject:@([self collapsedHeight])];
@@ -208,10 +208,11 @@ static CGFloat kAYDefaultShadowRadius = 3.0f;
         return;
     }
     
-    CGFloat stopToMoveTo;
-    CGFloat lowestStop = [self collapsedHeight];
+    CGFloat lowestStop = [[drawerStops valueForKeyPath:@"@min.floatValue"] floatValue];
+    CGFloat stopToMoveTo = 0.0f;
+    
     if (position == AYPannelPositionCollapsed) {
-        stopToMoveTo = lowestStop;
+        stopToMoveTo = [self collapsedHeight];
     } else if (position == AYPannelPositionPartiallyRevealed) {
         stopToMoveTo = [self partialRevealDrawerHeight];
     } else if (position == AYPannelPositionOpen) {
@@ -220,8 +221,9 @@ static CGFloat kAYDefaultShadowRadius = 3.0f;
         } else {
             stopToMoveTo = self.drawerScrollView.frame.size.height - kAYDefaultShadowRadius;
         }
-    } else { //close
-        stopToMoveTo = 0.0f;
+    } else {
+        // As per default we'll use the lowest available position
+        stopToMoveTo = lowestStop;
     }
     
     self.isAnimatingDrawerPosition = YES;
@@ -245,22 +247,7 @@ static CGFloat kAYDefaultShadowRadius = 3.0f;
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     if (scrollView != self.drawerScrollView) { return; }
     
-    NSMutableArray <NSNumber *> *drawerStops = [[NSMutableArray alloc] init];
-    
-    if ([self.supportedPositions containsObject:@(AYPannelPositionCollapsed)]) {
-        [drawerStops addObject:@([self collapsedHeight])];
-    }
-    
-    if ([self.supportedPositions containsObject:@(AYPannelPositionPartiallyRevealed)]) {
-        [drawerStops addObject:@([self partialRevealDrawerHeight])];
-    }
-    
-    if ([self.supportedPositions containsObject:@(AYPannelPositionOpen)]) {
-        [drawerStops addObject:@(self.drawerScrollView.bounds.size.height)];
-    }
-    
     CGFloat lowestStop = [[drawerStops valueForKeyPath:@"@min.floatValue"] floatValue];
-    
     
     if ([self.drawerContentViewController respondsToSelector:@selector(drawerDraggingProgress:)]) {
         
@@ -307,13 +294,18 @@ static CGFloat kAYDefaultShadowRadius = 3.0f;
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
     if (scrollView == self.drawerScrollView) {
         
-        [self setDrawerPosition:[self p_postionToMoveFromPostion:self.currentPosition lastDragTargetContentOffSet:self.lastDragTargetContentOffSet scrollView:self.drawerScrollView supportedPosition:self.supportedPositions] animated:YES];
+        [self setDrawerPosition:[self p_postionToMoveFromPostion:self.currentPosition
+                                     lastDragTargetContentOffSet:self.lastDragTargetContentOffSet
+                                                      scrollView:self.drawerScrollView
+                                               supportedPosition:self.supportedPositions
+                                 ] animated:YES];
     }
 }
 
 - (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset {
     if (scrollView == self.drawerScrollView) {
         self.lastDragTargetContentOffSet = CGPointMake(targetContentOffset->x, targetContentOffset->y);
+        
         *targetContentOffset = scrollView.contentOffset;
     }
 }
@@ -518,6 +510,14 @@ static CGFloat kAYDefaultShadowRadius = 3.0f;
     NSMutableArray <NSNumber *> *drawerStops = [[NSMutableArray alloc] init];
     CGFloat currentDrawerPositionStop = 0.0f;
     
+    if ([supportedPosition containsObject:@(AYPannelPositionClosed)]) {
+        CGFloat closedHeight = 0.0f;
+        [drawerStops addObject:@(closedHeight)];
+        if (currentPosition == AYPannelPositionClosed) {
+            currentDrawerPositionStop = closedHeight;
+        }
+    }
+    
     if ([supportedPosition containsObject:@(AYPannelPositionCollapsed)]) {
         CGFloat collapsedHeight = [self collapsedHeight];
         [drawerStops addObject:@(collapsedHeight)];
@@ -547,31 +547,25 @@ static CGFloat kAYDefaultShadowRadius = 3.0f;
     CGFloat distanceFromBottomOfView = lowestStop + lastDragTargetContentOffSet.y;
     CGFloat currentClosestStop = lowestStop;
     
-    AYPannelPosition cloestValidDrawerPosition = currentPosition;
+    AYPannelPosition closestValidDrawerPosition = currentPosition;
     
     for (NSNumber *currentStop in drawerStops) {
-        if (fabs(currentStop.floatValue - distanceFromBottomOfView) < fabs(currentClosestStop - distanceFromBottomOfView)) {
+        if (fabs(currentStop.floatValue - distanceFromBottomOfView) <= fabs(currentClosestStop - distanceFromBottomOfView)) {
             currentClosestStop = currentStop.integerValue;
         }
     }
     
-    if (fabs(currentClosestStop - (scrollView.frame.size.height)) <= FLT_EPSILON &&
-        [supportedPosition containsObject:@(AYPannelPositionOpen)]) {
-        
-        cloestValidDrawerPosition = AYPannelPositionOpen;
-        
-    } else if (fabs(currentClosestStop - [self collapsedHeight]) <= FLT_EPSILON &&
-               [supportedPosition containsObject:@(AYPannelPositionCollapsed)]) {
-        
-        cloestValidDrawerPosition = AYPannelPositionCollapsed;
-        
-    } else if ([supportedPosition containsObject:@(AYPannelPositionPartiallyRevealed)]){
-        
-        cloestValidDrawerPosition = AYPannelPositionPartiallyRevealed;
-        
+    if (fabs(currentClosestStop - (scrollView.frame.size.height)) <= FLT_EPSILON && [supportedPosition containsObject:@(AYPannelPositionOpen)]) {
+        closestValidDrawerPosition = AYPannelPositionOpen;
+    } else if (fabs(currentClosestStop - [self collapsedHeight]) <= FLT_EPSILON && [supportedPosition containsObject:@(AYPannelPositionCollapsed)]) {
+        closestValidDrawerPosition = AYPannelPositionCollapsed;
+    } else if (fabs(currentClosestStop - [self partialRevealDrawerHeight]) <= FLT_EPSILON && [supportedPosition containsObject:@(AYPannelPositionPartiallyRevealed)]) {
+        closestValidDrawerPosition = AYPannelPositionPartiallyRevealed;
+    } else if ([supportedPosition containsObject:@(AYPannelPositionClosed)]) {
+        closestValidDrawerPosition = AYPannelPositionClosed;
     }
     
-    return cloestValidDrawerPosition;
+    return closestValidDrawerPosition;
 }
 
 - (BOOL)p_needsCornerRadius {
